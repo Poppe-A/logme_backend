@@ -6,29 +6,36 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env: 
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Create .env file
+        run: echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+      - uses: actions/checkout@v4
       - name: Build docker_compose
-        run: docker-compose up -d --build
-      - name: Build application
-        run: docker-compose exec -T service yarn build
+        run: | 
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+          docker-compose up -d --build
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Deploy application
         env:
           PRIVATE_KEY: ${{ secrets.AWS_PEM }}
           HOSTNAME : ${{ secrets.AWS_IP }}
           USERNAME : ${{ secrets.AWS_USER_NAME }}
         run: |
-          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-          ssh -o StrictHostKeyChecking=no -i private_key ${USERNAME}@${HOSTNAME} `
-          
-          cd /logme_backend &&
+          echo "$PRIVATE_KEY" > private_key && chmod 700 private_key
+          ssh -o StrictHostKeyChecking=no -i private_key ${USERNAME}@${HOSTNAME} '
+          ls
+          cd logme_backend &&
           git checkout main &&
           git fetch --all &&
           git reset --hard origin/main &&
           git pull origin main &&
-          docker-compose up -d --build`
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+          docker compose up -d --build
+          '

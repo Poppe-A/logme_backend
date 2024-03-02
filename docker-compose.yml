@@ -24,9 +24,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
-    # volumes:
-    #   - .:/app
-    #   - /app/node_modules
+    volumes:
+      - .:/app
+      - /app/node_modules
     container_name: logme-backend
     expose:
       - "6000"

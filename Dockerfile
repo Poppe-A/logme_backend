@@ -36,6 +36,5 @@ COPY . .
 RUN npx prisma generate 
 
 RUN yarn build
-# CMD [ "cd", "dist" ]
-# CMD [ "ls"]
+CMD ls
 CMD [ "node", "dist/src/main.js"]
