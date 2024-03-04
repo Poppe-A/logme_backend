@@ -5,14 +5,14 @@
 FROM node:20-slim As development
 
 WORKDIR /app
+COPY . .
 
 COPY package*.json yarn.lock /app
 
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl && apt-get install -y procps
 
 RUN yarn
 
-COPY . /app
 RUN npx prisma generate 
 CMD yarn start:migrate:dev
 
@@ -22,19 +22,20 @@ CMD yarn start:migrate:dev
 ### PRODUCTION
 #####################
 
-FROM node:20-slim  As production
+FROM node:20-slim As production
 
 WORKDIR /app
 
-COPY package*.json yarn.lock ./
+COPY . .
+COPY package*.json yarn.lock /app
 
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl 
 
 RUN yarn
 
-COPY . .
 RUN npx prisma generate 
+# RUN npx prisma migrate deploy 
 
 RUN yarn build
-CMD ls
-CMD [ "node", "dist/src/main.js"]
+RUN ls
+CMD yarn start:prod

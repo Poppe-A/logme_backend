@@ -8,8 +8,12 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_DB=logme
       - POSTGRES_HOST_AUTH_METHOD=trust
+    networks: 
+    - nginx_network
     volumes:
       - postgres:/var/lib/postgresql/data
+    expose:
+      - "5432"
     ports:
       - '5432:5432'
     healthcheck:
@@ -19,15 +23,18 @@ services:
 
   app:
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
+    networks:
+      - nginx_network
     build:
       context: .
       dockerfile: Dockerfile
-      target: development
-    volumes:
-      - .:/app
-      - /app/node_modules
-    container_name: logme-backend
+      target: production
+    #seems not to be working
+    # volumes:
+    #   - .:/app
+    #   - /app/node_modules
+    # container_name: logme-backend
     expose:
       - "6000"
     ports:
@@ -38,6 +45,10 @@ services:
     env_file:
       - .env
 
+networks:
+  nginx_network:
+    external:
+      name: dockernet
 
 volumes:
   postgres:
