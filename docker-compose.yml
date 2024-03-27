@@ -29,9 +29,9 @@ services:
       - /app/node_modules
     container_name: logme-backend
     expose:
-      - "6000"
+      - "6666"
     ports:
-      - "6000:6000"
+      - "6666:6666"
     depends_on:
       postgres:
         condition: service_healthy
