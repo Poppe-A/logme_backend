@@ -41,6 +41,16 @@ $ yarn run test:cov
 This project works with Prisma ORM.
 Please run the migration before running the project
 
+```bash
+# create new miration when updating pirsma schema 
+$ npx prisma migrate dev --name "migration_name"
+
+
+# update prisma generated types
+$ npx prisma generate
+
+```
+
 ## CI/CD
 
 A github actions CI/CD pipeline is implemented.

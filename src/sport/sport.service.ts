@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { CreateSerieDto, CreateSessionDto } from './dto/session.dto';
-import { Exercise, Prisma, Sport } from '@prisma/client';
+import { CreateSerieDto, CreateSessionDto, UpdateSerieDto } from './dto/session.dto';
+import { Exercise, Prisma, Serie, Session, Sport } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { create } from 'domain';
 
@@ -49,17 +49,38 @@ export class SportService {
   ////////////
 
   async createSession(userId: number, createSessionDto: CreateSessionDto) {
-    try {
 
-      return this.prisma.session.create({
+    console.log("createSession", userId)
+    try {
+      const session = await this.prisma.session.create({
         data: {
           userId: userId,
           sportId: createSessionDto.sportId,
           name: createSessionDto.name
         }
       })
+      console.log(" session created", createSessionDto)
+
+      if (createSessionDto.sessionOptions?.template === 'custom' && createSessionDto.sessionOptions.customExercises?.length) {
+        console.log('initiate series creation');
+
+        const series: CreateSerieDto[] = createSessionDto.sessionOptions.customExercises.map((ex) => {
+          return {
+            sessionId: session.id,
+            exerciseId: ex.id,
+            value: 0,
+            order: 0,
+          };
+        });
+
+        for (const serie of series) {
+          await this.createSerie(userId, serie)
+        }
+      }
+      console.log("series ok")
+      return this.getSessionById(session.id)
     } catch (e) {
-      console.log(e)
+      console.log("error - createSession", e)
     }
   }
 
@@ -68,7 +89,7 @@ export class SportService {
       // Here we build an array of exercises present in the series
       const sessionExercises =
         session.series.map((serie) => {
-          return { id: serie.exerciseId, name: serie.exercise.name };
+          return { id: serie.exerciseId, name: serie.exercise.name, description: serie.exercise.description };
         })
 
       const uniqueExercises = sessionExercises.reduce((acc, curr) => {
@@ -78,7 +99,7 @@ export class SportService {
         return acc;
       }, [])
 
-      console.log(session.name, uniqueExercises)
+      // console.log("formatSessionExerciseAndSeries 1 ", session.name, uniqueExercises)
 
 
       const exercisesToDisplay = uniqueExercises.map((ex) => {
@@ -93,18 +114,20 @@ export class SportService {
             }
           })
         return {
-          exerciseId: ex.id,
-          exerciseName: ex.name,
+          id: ex.id,
+          name: ex.name,
+          description: ex.description,
           series: seriesFromExercise
         }
       })
 
-      console.log(session.name, exercisesToDisplay)
+      // console.log("formatSessionExerciseAndSeries 2 ", session.name, exercisesToDisplay)
 
 
       return {
         id: session.id,
         name: session.name,
+        isFinished: session.isFinished,
         createdAt: session.createdAt,
         sportId: session.sportId,
         sportName: session.sport.name,
@@ -131,6 +154,7 @@ export class SportService {
               exercise: {
                 select: {
                   name: true,
+                  description: true
                 }
               }
             }
@@ -138,7 +162,46 @@ export class SportService {
         }
       })
 
+      console.log("many", allSessions[0])
       return allSessions?.length ? this.formatSessionExerciseAndSeries(allSessions) : []
+
+    } catch (e) {
+      console.log(e)
+    }
+  }
+
+
+  async getSessionById(sessionId: number): Promise<Session> {
+    console.log("sessionid req", sessionId)
+    try {
+      const session = await this.prisma.session.findUnique({
+        where: {
+          id: sessionId
+        },
+        include: {
+          sport: {
+            select: {
+              name: true,
+              exercises: true
+            }
+          },
+          series: {
+            include: {
+              exercise: {
+                select: {
+                  name: true,
+                  description: true
+                }
+              }
+            }
+          }
+        }
+      })
+
+      console.log("get one session", session.sport)
+      const completeSession = session ? this.formatSessionExerciseAndSeries([session])[0] : null
+
+      return completeSession
 
     } catch (e) {
       console.log(e)
@@ -165,13 +228,42 @@ export class SportService {
   // SERIES
   ////////////
 
-  async createSerie(data: CreateSerieDto) {
+  async createSerie(userId: number, data: CreateSerieDto): Promise<Session> {
+    // const session = await this.getSessionById(data.sessionId);
+    // const serie = { ...data };
+    // serie.value = serie.value || 0
+    console.log("createserie", userId)
+
     try {
-      return this.prisma.serie.create({
-        data
+      await this.prisma.serie.create({
+        data: {
+          value: data.value ?? 0,
+          sessionId: data.sessionId,
+          exerciseId: data.exerciseId,
+          userId: userId
+        }
       })
+      return this.getSessionById(data.sessionId)
     } catch (e) {
       console.log(e)
+    }
+  }
+
+  async updateSerie(data: UpdateSerieDto): Promise<Session> {
+    try {
+      const updatedSerie = await this.prisma.serie.update({
+        where: {
+          id: data.id
+        },
+        data: {
+          value: data.value,
+        }
+      })
+      const sess = this.getSessionById(updatedSerie.sessionId)
+
+      return sess
+    } catch (e) {
+      console.log("------error", e)
     }
   }
 
@@ -192,6 +284,24 @@ export class SportService {
     } else {
       // throw error no rights
     }
+  }
+
+  async getLastSeriesOfExercise(userId: number, exerciseId: number) {
+    const lastSerie = await this.prisma.serie.findMany({
+      where: {
+        userId: userId,
+        exerciseId: exerciseId,
+        session: {
+          isFinished: true
+        }
+      },
+      // TODO reste à trier pour récupérer que la derniere session
+      orderBy: { id: 'desc' },
+      take: 1
+    })
+
+    console.log("last serie", lastSerie)
+
   }
 
 

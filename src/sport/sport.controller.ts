@@ -1,7 +1,7 @@
 
-import { Controller, Get, Post, Request, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Request, Param, Body, Query, UseGuards, Patch } from '@nestjs/common';
 import { SportService } from './sport.service';
-import { CreateSerieDto, CreateSessionDto } from './dto/session.dto';
+import { CreateSerieDto, CreateSessionDto, UpdateSerieDto } from './dto/session.dto';
 import { Exercise, Prisma, Sport } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 @Controller('sport')
@@ -12,7 +12,6 @@ export class SportController {
 
   @Get()
   async getSports(): Promise<Sport[]> {
-    console.log("get sports")
     return this.sportService.getAllSports();
   }
 
@@ -27,8 +26,6 @@ export class SportController {
 
   @Get(':sportId/exercise')
   async getExercisesBySportId(@Param('sportId') sportId): Promise<Prisma.SportCreateInput[]> {
-    console.log("get exercises", sportId)
-
     return this.sportService.getExercisesBySportId(parseInt(sportId));
   }
 
@@ -37,7 +34,6 @@ export class SportController {
     @Param('sportId') sportId: any,
     @Body() data: Exercise
   ) {
-    console.log("zsefrzegfr")
     return this.sportService.createExercise(parseInt(sportId), data);
   }
 
@@ -56,7 +52,7 @@ export class SportController {
     @Request() req,
     @Body() sessionDto: CreateSessionDto
   ) {
-    console.log("req", req.user)
+    console.log("------- create Session", req.user, sessionDto)
     return this.sportService.createSession(req.user.id, sessionDto)
   }
 
@@ -65,7 +61,7 @@ export class SportController {
   async getAllSessions(
     @Request() req,
   ) {
-    const a = await this.sportService.getAllSessions(req.user.id);
+    // const a = await this.sportService.getAllSessions(req.user.id);
     return this.sportService.getAllSessions(req.user.id);
   }
 
@@ -76,7 +72,7 @@ export class SportController {
     @Request() req,
     @Param('sportId') sportId
   ) {
-    return this.sportService.getSessionBySportId(req.user.userId, parseInt(sportId))
+    return this.sportService.getSessionBySportId(req.user.id, parseInt(sportId))
   }
 
   ////////////
@@ -86,10 +82,20 @@ export class SportController {
   @UseGuards(JwtAuthGuard)
   @Post('session/serie')
   createSerie(
+    @Request() req,
     @Body() data: CreateSerieDto
   ) {
-    return this.sportService.createSerie(data)
+    return this.sportService.createSerie(req.user.id, data)
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('session/serie')
+  updateSerie(
+    @Body() data: UpdateSerieDto
+  ) {
+    return this.sportService.updateSerie(data)
+  }
+
 
   @UseGuards(JwtAuthGuard)
   @Get('session/:sessionId/series')
@@ -97,8 +103,17 @@ export class SportController {
     @Request() req,
     @Param('sessionId') sessionId
   ) {
-    console.log("ttt", typeof sessionId)
-    return this.sportService.getAllSeriesFromSession(parseInt(req.user.userId), parseInt(sessionId))
+    return this.sportService.getAllSeriesFromSession(parseInt(req.user.id), parseInt(sessionId))
+  }
+
+
+  @UseGuards(JwtAuthGuard)
+  @Get('session/lastSeries/:exerciseId')
+  getLastSeriesOfExercise(
+    @Request() req,
+    @Param('exerciseId') exerciseId
+  ) {
+    return this.sportService.getLastSeriesOfExercise(parseInt(req.user.id), parseInt(exerciseId))
   }
 
   // @Get('sessions/:userId')
@@ -110,9 +125,5 @@ export class SportController {
   // getSession(@Param('sessionId') sessionId) {
   //   return this.sportService.getSession(sessionId)
   // }
-
-
-
-
 
 }

@@ -8,6 +8,6 @@ async function bootstrap() {
     origin: true,
   });
 
-  await app.listen(6666);
+  await app.listen(8200);
 }
 bootstrap();
