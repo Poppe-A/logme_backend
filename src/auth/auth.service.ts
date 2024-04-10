@@ -26,10 +26,7 @@ export class AuthService {
   async signup(username: string, password: string): Promise<UserDto> {
     const saltOrRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltOrRounds);
-    const result = await this.userService.createUser(
-      username,
-      hashedPassword,
-    );
+    const result = await this.userService.createUser(username, hashedPassword);
     return result;
   }
 
@@ -37,9 +34,9 @@ export class AuthService {
     const user = await this.userService.getUser(username);
 
     if (user) {
-      const isPasswordValid = await bcrypt.compare(pass, user.password)
+      const isPasswordValid = await bcrypt.compare(pass, user.password);
       if (isPasswordValid) {
-        return user
+        return user;
       } else {
         throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
       }

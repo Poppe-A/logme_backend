@@ -8,9 +8,8 @@ export class AppController {
   @Get()
   getHello() {
     console.log(
-      '🚀 ~ file: app.controller.ts:11 ~ AppController ~ getHello ~ request:',
+      '🚀 ~ file: app.controller.ts:11 ~ AppController ~ getHello ~ request:'
     );
     return this.appService.getHello();
   }
-
 }

@@ -42,7 +42,7 @@ This project works with Prisma ORM.
 Please run the migration before running the project
 
 ```bash
-# create new miration when updating pirsma schema 
+# create new miration when updating pirsma schema
 $ npx prisma migrate dev --name "migration_name"
 
 
@@ -56,10 +56,17 @@ $ npx prisma generate
 A github actions CI/CD pipeline is implemented.
 It deploys the project on an AWS EC2 instance, but for costs reason, this instance is not running everytime.
 
-- Start the instance 
+- Start the instance
 - run sudo systemctl start docker
 - run docker compose in ngnix folder
-- run docker compose with the prod file in logme folder 
-
+- run docker compose with the prod file in logme folder
 
 Nest is [MIT licensed](LICENSE).
+
+TODO :
+
+- Make stuff can be updated and deleted only by its owner
+- Error handling (watch the typing)
+- Find a better way to return a session. It's currently formatted in the backend,
+  but it's not perfect because the front end need to get the whole session returned on every update.
+  I need to do the formatting on the front, or handle the update properly
